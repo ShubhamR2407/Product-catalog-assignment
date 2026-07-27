@@ -1,2 +1,4 @@
-export const API_BASE_URL = 'http://localhost:4000/api';
-export const FILE_BASE_URL = 'http://localhost:4000';
+import { environment } from '../../environments/environment';
+
+export const API_BASE_URL = environment.apiBaseUrl;
+export const FILE_BASE_URL = environment.fileBaseUrl;

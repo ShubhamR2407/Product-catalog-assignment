@@ -6,8 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
+    "start:prod": "prisma migrate deploy && node dist/server.js",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio"
@@ -16,6 +17,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": "20.x"
+  },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.0",
     "@prisma/client": "^7.9.0",

@@ -9,7 +9,7 @@ import { jobsRouter } from "./modules/jobs/jobs.routes";
 
 export const app = express();
 
-app.use(cors());
+app.use(cors({ origin: env.corsOrigin }));
 app.use(express.json());
 app.use("/uploads", express.static(env.uploadDir));
 

@@ -6,4 +6,5 @@ export const env = {
   uploadDir: path.resolve(process.cwd(), process.env.UPLOAD_DIR ?? "./storage/uploads"),
   reportDir: path.resolve(process.cwd(), process.env.REPORT_DIR ?? "./storage/reports"),
   tmpUploadDir: path.resolve(process.cwd(), "./tmp/uploads"),
+  corsOrigin: process.env.CORS_ORIGIN ?? "*",
 };
