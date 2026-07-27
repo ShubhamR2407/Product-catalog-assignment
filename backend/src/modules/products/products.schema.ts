@@ -16,9 +16,16 @@ export const idParamSchema = z.object({
   id: z.string().uuid(),
 });
 
-export const bulkDeleteSchema = z.object({
-  ids: z.array(z.string().uuid()).min(1),
-});
+export const bulkDeleteSchema = z.union([
+  z.object({
+    ids: z.array(z.string().uuid()).min(1),
+  }),
+  z.object({
+    all: z.literal(true),
+    search: z.string().optional(),
+    categoryId: z.string().uuid().optional(),
+  }),
+]);
 
 export const listProductsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

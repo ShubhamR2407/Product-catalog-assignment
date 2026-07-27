@@ -50,6 +50,10 @@ export class ProductService {
     return this.http.post<{ deletedCount: number }>(`${this.base}/bulk-delete`, { ids });
   }
 
+  bulkDeleteAll(filter: { search?: string; categoryId?: string }): Observable<{ deletedCount: number }> {
+    return this.http.post<{ deletedCount: number }>(`${this.base}/bulk-delete`, { all: true, ...filter });
+  }
+
   bulkUpload(file: File): Observable<{ jobId: string; status: string }> {
     const formData = new FormData();
     formData.append('file', file);

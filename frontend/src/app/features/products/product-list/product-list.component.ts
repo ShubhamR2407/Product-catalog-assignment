@@ -39,7 +39,12 @@ import { FILE_BASE_URL } from '../../../core/config';
     <div class="header">
       <h1>Products</h1>
       <div class="header-actions">
-        @if (selectedIds().size > 0) {
+        @if (selectAllMatching()) {
+          <button mat-stroked-button color="warn" (click)="removeAllMatching()">
+            <mat-icon>delete_forever</mat-icon>
+            Delete All ({{ total() }})
+          </button>
+        } @else if (selectedIds().size > 0) {
           <button mat-stroked-button color="warn" (click)="removeSelected()">
             <mat-icon>delete</mat-icon>
             Delete Selected ({{ selectedIds().size }})
@@ -72,19 +77,36 @@ import { FILE_BASE_URL } from '../../../core/config';
     @if (loading()) {
       <mat-spinner diameter="32"></mat-spinner>
     } @else {
+      @if (allSelected() && total() > products().length && !selectAllMatching()) {
+        <div class="select-all-banner">
+          All {{ products().length }} products on this page are selected.
+          <button mat-button (click)="selectAllMatching.set(true)">
+            Select all {{ total() }} products{{ search || categoryId ? ' matching filters' : '' }}
+          </button>
+        </div>
+      }
+      @if (selectAllMatching()) {
+        <div class="select-all-banner">
+          All {{ total() }} products are selected.
+          <button mat-button (click)="clearSelection()">Clear selection</button>
+        </div>
+      }
+
       <table mat-table [dataSource]="products()" matSort (matSortChange)="onSortChange($event)" class="mat-elevation-z1 full-width">
         <ng-container matColumnDef="select">
           <th mat-header-cell *matHeaderCellDef>
             <mat-checkbox
-              [checked]="allSelected()"
-              [indeterminate]="someSelected()"
+              [checked]="allSelected() || selectAllMatching()"
+              [indeterminate]="someSelected() && !selectAllMatching()"
+              [disabled]="selectAllMatching()"
               (change)="toggleAll($event.checked)"
               aria-label="Select all products on this page"
             ></mat-checkbox>
           </th>
           <td mat-cell *matCellDef="let product">
             <mat-checkbox
-              [checked]="isSelected(product.id)"
+              [checked]="isSelected(product.id) || selectAllMatching()"
+              [disabled]="selectAllMatching()"
               (change)="toggleOne(product.id, $event.checked)"
               [aria-label]="'Select ' + product.name"
             ></mat-checkbox>
@@ -164,6 +186,16 @@ import { FILE_BASE_URL } from '../../../core/config';
         gap: 1rem;
         flex-wrap: wrap;
       }
+      .select-all-banner {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        margin-bottom: 0.5rem;
+        background: #e8eaf6;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
       .full-width {
         width: 100%;
       }
@@ -189,12 +221,14 @@ export class ProductListComponent implements OnInit {
   private categoryService = inject(CategoryService);
 
   fileBase = FILE_BASE_URL;
-  columns = ['image', 'name', 'category', 'price', 'actions'];
+  columns = ['select', 'image', 'name', 'category', 'price', 'actions'];
 
   products = signal<Product[]>([]);
   categories = signal<Category[]>([]);
   total = signal(0);
   loading = signal(true);
+  selectedIds = signal<Set<string>>(new Set());
+  selectAllMatching = signal(false);
 
   search = '';
   categoryId: string | undefined = undefined;
@@ -210,6 +244,7 @@ export class ProductListComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
+    this.clearSelection();
     this.productService
       .list({
         page: this.pageIndex + 1,
@@ -227,6 +262,49 @@ export class ProductListComponent implements OnInit {
         },
         error: () => this.loading.set(false),
       });
+  }
+
+  isSelected(id: string): boolean {
+    return this.selectedIds().has(id);
+  }
+
+  toggleOne(id: string, checked: boolean): void {
+    const next = new Set(this.selectedIds());
+    if (checked) next.add(id);
+    else next.delete(id);
+    this.selectedIds.set(next);
+  }
+
+  toggleAll(checked: boolean): void {
+    this.selectedIds.set(checked ? new Set(this.products().map((p) => p.id)) : new Set());
+  }
+
+  allSelected(): boolean {
+    return this.products().length > 0 && this.selectedIds().size === this.products().length;
+  }
+
+  someSelected(): boolean {
+    return this.selectedIds().size > 0 && !this.allSelected();
+  }
+
+  clearSelection(): void {
+    this.selectedIds.set(new Set());
+    this.selectAllMatching.set(false);
+  }
+
+  removeSelected(): void {
+    const ids = Array.from(this.selectedIds());
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} selected product(s)?`)) return;
+    this.productService.bulkDelete(ids).subscribe(() => this.load());
+  }
+
+  removeAllMatching(): void {
+    const scope = this.search || this.categoryId ? 'matching the current filters' : 'in the catalog';
+    if (!confirm(`Delete all ${this.total()} products ${scope}? This cannot be undone.`)) return;
+    this.productService
+      .bulkDeleteAll({ search: this.search || undefined, categoryId: this.categoryId })
+      .subscribe(() => this.load());
   }
 
   onFilterChange(): void {

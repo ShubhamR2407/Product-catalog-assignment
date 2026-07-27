@@ -33,23 +33,26 @@ export type ListProductsQuery = {
   categoryId?: string;
 };
 
+function buildProductWhere(filter: { search?: string; categoryId?: string }): Prisma.ProductWhereInput {
+  return {
+    AND: [
+      filter.categoryId ? { categoryId: filter.categoryId } : {},
+      filter.search
+        ? {
+            OR: [
+              { name: { contains: filter.search, mode: "insensitive" } },
+              { category: { name: { contains: filter.search, mode: "insensitive" } } },
+            ],
+          }
+        : {},
+    ],
+  };
+}
+
 export const productsService = {
   async list(query: ListProductsQuery) {
     const { page, limit, sortBy, order, search, categoryId } = query;
-
-    const where: Prisma.ProductWhereInput = {
-      AND: [
-        categoryId ? { categoryId } : {},
-        search
-          ? {
-              OR: [
-                { name: { contains: search, mode: "insensitive" } },
-                { category: { name: { contains: search, mode: "insensitive" } } },
-              ],
-            }
-          : {},
-      ],
-    };
+    const where = buildProductWhere({ search, categoryId });
 
     const [rows, total] = await Promise.all([
       prisma.product.findMany({
@@ -130,6 +133,14 @@ export const productsService = {
   async bulkRemove(ids: string[]) {
     const existing = await prisma.product.findMany({ where: { id: { in: ids } } });
     const { count } = await prisma.product.deleteMany({ where: { id: { in: ids } } });
+    for (const product of existing) deleteImageFile(product.imagePath);
+    return { deletedCount: count };
+  },
+
+  async bulkRemoveByFilter(filter: { search?: string; categoryId?: string }) {
+    const where = buildProductWhere(filter);
+    const existing = await prisma.product.findMany({ where, select: { imagePath: true } });
+    const { count } = await prisma.product.deleteMany({ where });
     for (const product of existing) deleteImageFile(product.imagePath);
     return { deletedCount: count };
   },

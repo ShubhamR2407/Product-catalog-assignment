@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Product Catalog API",
-    "description": "CRUD for Users/Categories/Products, server-side paginated product listing, async bulk upload, and async CSV/XLSX report generation. Run the backend locally on http://localhost:4000 before using this collection. For Bulk Upload, first create categories named Electronics, Home, and Stationery (see Categories folder) so the rows in sample-products.csv resolve correctly.",
+    "description": "Backend needs to be running on localhost:4000. For bulk upload, create the Electronics/Home/Stationery categories first (see Categories folder) so sample-products.csv matches up.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -259,6 +259,22 @@
               "raw": "{{baseUrl}}/products/{{productId}}",
               "host": ["{{baseUrl}}"],
               "path": ["products", "{{productId}}"]
+            }
+          }
+        },
+        {
+          "name": "Bulk delete products",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/products/bulk-delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "bulk-delete"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"{{productId}}\"]\n}"
             }
           }
         }

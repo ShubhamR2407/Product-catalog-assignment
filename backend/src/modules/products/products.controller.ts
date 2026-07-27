@@ -45,7 +45,14 @@ export const productsController = {
   },
 
   bulkRemove: async (req: Request, res: Response) => {
-    const { ids } = req.body as { ids: string[] };
-    res.json(await productsService.bulkRemove(ids));
+    const body = req.body as
+      | { ids: string[] }
+      | { all: true; search?: string; categoryId?: string };
+
+    if ("all" in body) {
+      res.json(await productsService.bulkRemoveByFilter({ search: body.search, categoryId: body.categoryId }));
+    } else {
+      res.json(await productsService.bulkRemove(body.ids));
+    }
   },
 };
