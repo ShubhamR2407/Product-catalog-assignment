@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  products  Product[]
+
+  @@index([name])
+  @@map("categories")
+}
+
+model Product {
+  id         String   @id @default(uuid())
+  name       String
+  imagePath  String?  @map("image_path")
+  price      Decimal  @db.Decimal(12, 2)
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@index([price])
+  @@index([categoryId])
+  @@index([categoryId, price])
+  @@map("products")
+}
+
+enum JobType {
+  bulk_upload
+  report
+}
+
+enum JobStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model Job {
+  id             String    @id @default(uuid())
+  type           JobType
+  status         JobStatus @default(pending)
+  sourceFilePath String?   @map("source_file_path")
+  resultFilePath String?   @map("result_file_path")
+  totalRows      Int?      @map("total_rows")
+  processedRows  Int       @default(0) @map("processed_rows")
+  successRows    Int       @default(0) @map("success_rows")
+  failedRows     Int       @default(0) @map("failed_rows")
+  errors         Json      @default("[]")
+  params         Json?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  startedAt      DateTime? @map("started_at")
+  completedAt    DateTime? @map("completed_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("jobs")
+}
